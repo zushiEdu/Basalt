@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+
+        <title>Basalt</title>
+
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Barlow&family=IBM+Plex+Mono&display=swap");
+
+            html {
+                font-family: "Barlow", sans-serif;
+            }
+
+            .body {
+                --bg: #f2f2f2;
+                display: flex;
+                height: 100vh;
+                flex-direction: column;
+                margin: 0;
+                background-color: var(--bg);
+            }
+
+            .b {
+                --lnk: #465e73;
+                color: var(--lnk);
+                font-weight: 800;
+            }
+
+            div {
+                width: 55%;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            ul {
+                display: flex;
+                margin: auto;
+                margin-block-start: 1em;
+                margin-block-end: 1em;
+                margin-inline-start: 0px;
+                margin-inline-end: 0px;
+                flex-wrap: wrap;
+                justify-content: space-between;
+                padding: 0;
+            }
+
+            #main-renderer {
+                font-family: "IBM Plex Mono";
+                padding: 20px 0px;
+                font-size: 30px;
+                margin: auto;
+                width: 90%;
+                text-align: center;
+                line-height: 1.15;
+            }
+
+            .sesame-seeds {
+                --headers: #00010d;
+                color: var(--headers);
+                margin-bottom: 1;
+            }
+
+            .theme {
+                --bc: #a8b5bf;
+                border-style: hidden;
+                background-color: var(--bc);
+                border-radius: 5px;
+                padding: 15px;
+            }
+
+            .theme:active {
+                --hghltd: #728ca3;
+                background-color: var(--hghltd);
+            }
+
+            .fluff {
+                --text: #00010d;
+                color: var(--text);
+            }
+
+            #meat {
+                --cbg: #00010d;
+                background-color: var(--cbg);
+                border-radius: 10px;
+            }
+
+            #footer {
+                position: absolute;
+                bottom: 0;
+            }
+            #bottom-bun {
+                margin-top: auto;
+            }
+        </style>
+    </head>
+    <body class="body">
+        <div id="top-bun">
+            <h1 class="sesame-seeds">Basalt</h1>
+            <button class="theme" onclick="themeChange()"><p class="fluff" style="margin: 0">Change Theme</p></button>
+            <p class="fluff">
+                Basalt is an evolution of a previous game I made in Java that was played within a console. This version converts that same game and gives it the
+                tools of Javascript. This game in short form is like Minecraft but in a birds-eye view text based format.
+            </p>
+        </div>
+
+        <div id="meat">
+            <p id="main-renderer"></p>
+        </div>
+
+        <div id="bottom-bun">
+            <footer>
+                <ul>
+                    <p class="fluff">Started By Ethan Huber On 3/2/22</p>
+                    <a style="text-decoration: none" href="https://github.com/zushiEdu/Caved"><p class="b">Caved</p></a>
+                    <a style="text-decoration: none" href="https://github.com/zushiEdu/Basalt"><p class="b">Basalt</p></a>
+                    <a style="text-decoration: none" href="https://github.com/zushiEdu/"><p class="b">Github</p></a>
+                </ul>
+            </footer>
+        </div>
+
+        <script>
+            saveSetting();
+            updateTheme(localStorage.getItem("dark"));
+
+            // Definitions
+            var size = 100;
+            var chunkSize = 9;
+
+            var playerX = Math.round(centerPlayer(size));
+            var playerY = Math.round(centerPlayer(size));
+
+            var spawnX = Math.round(centerPlayer(size));
+            var spawnY = Math.round(centerPlayer(size));
+
+            var health = 3;
+
+            var blocks = [[0]];
+            var correspondingChar = ["W", "D", "S", "C", "B"];
+            var correspondingColor = ["#D8B589", "#9b7653", "#808080", "#D8B589", "#eed8a5"];
+
+            var mobs = [[0]];
+
+            var selectedBlock = 0;
+
+            var chunkX = Math.round(posToChunk(centerPlayer(size) - 1));
+            var chunkY = Math.round(posToChunk(centerPlayer(size) - 1));
+
+            var inventory = [10, 10, 10, 1];
+
+            // Get Input
+            document.addEventListener(
+                "keydown",
+                (event) => {
+                    var name = event.key;
+                    input(name);
+                },
+                false
+            );
+
+            // Mains
+            blocks = genMap(size);
+            //mobs = genMobs(size);
+            var main = document.getElementById("main-renderer");
+            var mode = 0;
+
+            updateRenderer();
+
+            // Functions
+            function input(key) {
+                if (mode == 0) {
+                    if (key == "a") {
+                        move(-1, 0, 0);
+                        mode = 0;
+                        updateRenderer();
+                    }
+                    if (key == "d") {
+                        move(1, 0, 0);
+                        mode = 0;
+                        updateRenderer();
+                    }
+                    if (key == "w") {
+                        move(0, -1, 0);
+                        mode = 0;
+                        updateRenderer();
+                    }
+                    if (key == "s") {
+                        move(0, 1, 0);
+                        mode = 0;
+                        updateRenderer();
+                    }
+
+                    if (key == "p") {
+                        if (blocks[playerY][playerX] == null && inventory[selectedBlock] > 0) {
+                            blocks[playerY][playerX] = selectedBlock;
+                            inventory[selectedBlock]--;
+                            mode = 0;
+                            updateRenderer();
+                        }
+                    }
+
+                    if (key == "m") {
+                        if (!(blocks[playerY][playerX] == null)) {
+                            inventory[blocks[playerY][playerX]]++;
+                            blocks[playerY][playerX] = null;
+                            mode = 0;
+                            updateRenderer();
+                        }
+                    }
+
+                    if (key == "e" && selectedBlock < inventory.length - 1) {
+                        selectedBlock++;
+                        mode = 0;
+                        updateRenderer();
+                    } else if (key == "q" && selectedBlock > 0) {
+                        selectedBlock--;
+                        mode = 0;
+                        updateRenderer();
+                    }
+
+                    if (key == "r") {
+                        if (blocks[playerY][playerX] == 3) {
+                            mode = 1;
+                            updateRenderer();
+                        } else if (blocks[playerY][playerX] == 4) {
+                            spawnX = playerX;
+                            spawnY = playerY;
+                            mode = 0;
+                            updateRenderer();
+                        }
+                    }
+
+                    if (key == "x") {
+                        playerX = spawnX;
+                        playerY = spawnY;
+                        chunkX = Math.round(posToChunk(spawnX)) - 1;
+                        chunkY = Math.round(posToChunk(spawnY)) - 1;
+                        mode = 0;
+                        updateRenderer();
+                    }
+                } else if (mode == 1) {
+                    if (key == "1") {
+                        if (inventory[0] >= 6) {
+                            inventory[4]++;
+                            inventory[0] -= 6;
+                            mode = 0;
+                            updateRenderer();
+                        }
+                        mode = 0;
+                        updateRenderer();
+                    }
+                }
+
+                //moveMobs();
+                //checkPlayerHealth();
+            }
+
+            function checkPlayerHealth() {
+                if (health <= 0) {
+                    playerX = spawnX;
+                    playerY = spawnY;
+
+                    chunkX = posToChunk(spawnX);
+                    chunkY = posToChunk(spawnY);
+                    // inventory gets divided by two when player is killed
+                    for (var i = 0; i < inventory.length; i++) {
+                        inventory[i] = inventory[i] / 2;
+                    }
+                    health = 3;
+                }
+            }
+
+            // mob activity cycle
+            function moveMobs() {
+                // moves mobs while no block is in the way
+                for (var y = 0; y < mobs.length; y++) {
+                    for (var x = 0; x < mobs[y].length; x++) {
+                        if (mobs[y][x] != null) {
+                            // removes any dead monsters
+                            if (mobs[y][x] <= 0) {
+                                mobs[y][x] = null;
+                            }
+                            // moves mobs with random chance (1 in 4) while checking which direction it should move in
+                            if (randomBool(0, 4) && x > playerX && blocks[y][x + 1] == null) {
+                                console.log("Something is ALIVE!");
+
+                                if (x - 1 - playerX >= 1) {
+                                    console.log("Something is ALIVE! AND THEY MOVED!!!!" + x + " " + y);
+
+                                    var mh = mobs[y][x];
+                                    mobs[y][x] == null;
+                                    mobs[y][x - 1] == mh;
+                                }
+                            }
+                            if (randomBool(0, 4) && x < playerX && blocks[y][x + 1] == null) {
+                                console.log("Something is ALIVE!");
+
+                                if (x + 1 - playerX <= -1) {
+                                    console.log("Something is ALIVE! AND THEY MOVED!!!!" + x + " " + y);
+
+                                    var mh = mobs[y][x];
+                                    mobs[y][x] == null;
+                                    mobs[y][x + 1] == mh;
+                                }
+                            }
+                            if (randomBool(0, 4) && y < playerY && blocks[y + 1][x] == null) {
+                                console.log("Something is ALIVE!");
+
+                                if (y + 1 - playerY <= -1) {
+                                    console.log("Something is ALIVE! AND THEY MOVED!!!!" + x + " " + y);
+
+                                    var mh = mobs[y][x];
+                                    mobs[y][x] == null;
+                                    mobs[y + 1][x] == mh;
+                                }
+                            }
+                            if (randomBool(0, 4) && y > playerY && blocks[y - 1][x] == null) {
+                                console.log("Something is ALIVE!");
+
+                                if (y - 1 - playerY >= 1) {
+                                    console.log("Something is ALIVE! AND THEY MOVED!!!!" + x + " " + y);
+
+                                    var mh = mobs[y][x];
+                                    mobs[y][x] == null;
+                                    mobs[y - 1][x] == mh;
+                                }
+                            }
+
+                            // damage player if in a 1 wide boundry around the monster
+                            // System.out.println((mobs[i].x - playerX) + " " + (mobs[i].y - playerY));
+                            if (randomBool(0, 4) && x - playerX >= -1 && x - playerX <= 1 && y - playerY <= 1 && y - playerY >= -1) {
+                                health--;
+                            }
+                        }
+                    }
+                }
+
+                updateRenderer(0);
+            }
+
+            function genMobs(size) {
+                var newMobs = [[0]];
+                for (var y = 0; y < size; y++) {
+                    newMobs[y] = [];
+                    var p = randomInt(0, size);
+                    for (var x = 0; x < size; x++) {
+                        if (x == p) {
+                            newMobs[y][x] = 3;
+                        } else {
+                            newMobs[y][x] = null;
+                        }
+                    }
+                }
+                return newMobs;
+            }
+
+            function posToChunk(inputPos) {
+                return inputPos / chunkSize;
+            }
+
+            function centerPlayer(inputSize) {
+                if ((inputSize / chunkSize) % 2 == 0) {
+                    return inputSize / 2 + 4;
+                } else {
+                    return inputSize / 2;
+                }
+            }
+
+            function move(x, y, borderOffset) {
+                // subtract offset to high values
+                // add offset to low values
+                var highX = (chunkX + 1) * chunkSize - 1 - borderOffset;
+                var lowX = (chunkX + 1) * chunkSize - chunkSize + borderOffset;
+
+                var highY = (chunkY + 1) * chunkSize - 1 - borderOffset;
+                var lowY = (chunkY + 1) * chunkSize - chunkSize + borderOffset;
+
+                if (playerX + x >= lowX && playerX + x <= highX) {
+                    // if within bounds of chunk move normally
+                    playerX = playerX + x;
+                } else if (playerX == lowX || playerX == highX) {
+                    // if at edge of chunk check if not at edge of map
+                    // if not at map offset chunk and player
+                    if (chunkX + x >= 0 && chunkX + x <= size / chunkSize - 1) {
+                        chunkX = chunkX + x;
+                        playerX = playerX + x;
+                    }
+                }
+
+                if (playerY + y <= highY && playerY + y >= lowY) {
+                    // if within bounds of chunk move normally
+                    playerY = playerY + y;
+                } else if (playerY == lowY || playerY == highY) {
+                    // if at edge of chunk check if not at edge of map
+                    // if not at map offset chunk and player
+                    if (chunkY + y <= size / chunkSize - 1 && chunkY + y >= 0) {
+                        chunkY = chunkY + y;
+                        playerY = playerY + y;
+                    }
+                }
+            }
+
+            function updateRenderer() {
+                if (mode == 0) {
+                    main.innerHTML = createTopUI() + createMap() + createBottomUI();
+                } else if (mode == 1) {
+                    main.innerHTML = createCraftingUI();
+                }
+            }
+
+            function createCraftingUI() {
+                var changedText = "";
+                changedText += "Crafting UI".fontcolor("#FFFFFF");
+                changedText += "<br>" + "1. Bed".fontcolor("#FFFFFF");
+                return changedText;
+            }
+
+            function saveSetting() {
+                // if there is no stored value for dark setting make default light
+                if (!localStorage.getItem("dark")) {
+                    localStorage.setItem("dark", 1);
+                }
+            }
+
+            function updateTheme() {
+                const background = document.getElementsByClassName("body");
+                const links = document.getElementsByClassName("b");
+                const fluff = document.getElementsByClassName("fluff");
+                const headers = document.getElementsByClassName("sesame-seeds");
+                const buttons = document.getElementsByClassName("theme");
+                if (localStorage.getItem("dark") == 1) {
+                    // find all elements with matching class names and set their theme corresponding color
+                    for (let a = 0; a < background.length; a++) {
+                        background[a].style.setProperty("--bg", "#f2f2f2");
+                    }
+                    for (let b = 0; b < links.length; b++) {
+                        links[b].style.setProperty("--lnk", "#465e73");
+                    }
+                    for (let c = 0; c < fluff.length; c++) {
+                        fluff[c].style.setProperty("--text", "#00010d");
+                    }
+                    for (let d = 0; d < headers.length; d++) {
+                        headers[d].style.setProperty("--headers", "#00010d");
+                    }
+                    for (let e = 0; e < buttons.length; e++) {
+                        buttons[e].style.setProperty("--bc", "#a8b5bf");
+                    }
+                } else {
+                    // find all elements with matching class names and set their theme corresponding color
+                    for (let a = 0; a < background.length; a++) {
+                        background[a].style.setProperty("--bg", "#1E1E3C");
+                    }
+                    for (let b = 0; b < links.length; b++) {
+                        links[b].style.setProperty("--lnk", "#8F8F8F");
+                    }
+                    for (let c = 0; c < fluff.length; c++) {
+                        fluff[c].style.setProperty("--text", "#8F8F8F");
+                    }
+                    for (let d = 0; d < headers.length; d++) {
+                        headers[d].style.setProperty("--headers", "#8F8F8F");
+                    }
+                    for (let e = 0; e < buttons.length; e++) {
+                        buttons[e].style.setProperty("--bc", "#3E5366");
+                    }
+                }
+            }
+
+            function themeChange() {
+                if (localStorage.getItem("dark") == 1) {
+                    // make theme dark
+                    localStorage.setItem("dark", 0);
+                    updateTheme();
+                } else {
+                    // make theme light
+                    localStorage.setItem("dark", 1);
+                    updateTheme();
+                }
+            }
+
+            function genMap(size) {
+                let newMap = [[0]];
+
+                let lim = Math.round(18 * Math.pow(size / chunkSize, 2));
+                let rand = randomInt(0, lim);
+
+                for (var y = 0; y < size; y++) {
+                    newMap[y] = [];
+                    for (var x = 0; x < size; x++) {
+                        newMap[y][x] = null;
+                    }
+                }
+
+                for (var n = 0; n < rand; n++) {
+                    let x = randomInt(0, (chunkSize * size - 1) / chunkSize);
+                    let y = randomInt(0, (chunkSize * size - 1) / chunkSize);
+                    let id = randomInt(0, 2);
+
+                    newMap[y][x] = id;
+                }
+
+                return newMap;
+            }
+
+            function createTopUI() {
+                var changedText = "";
+                for (var i = 0; i < health; i++) {
+                    changedText += "[".fontcolor("#FFFFFF") + "<3".fontcolor("#FF0000") + "]".fontcolor("#FFFFFF");
+                }
+                changedText += "<br>";
+                changedText += ("[" + chunkX + "," + chunkY + "] " + "[" + playerX + "," + playerY + "]").fontcolor("#ffffff") + "<br>";
+                return changedText;
+            }
+
+            function createBottomUI() {
+                var changedText = "";
+                for (var i = 0; i < inventory.length; i++) {
+                    if (i == selectedBlock) {
+                        changedText += ("[" + correspondingChar[i] + inventory[i] + "] ").fontcolor("#FFFFFF");
+                    } else {
+                        changedText += (correspondingChar[i] + inventory[i] + " ").fontcolor("#FFFFFF");
+                    }
+                }
+                return changedText;
+            }
+
+            function createMap() {
+                var changedText = "";
+                for (var y = Math.round((chunkY + 1) * chunkSize - chunkSize); y <= (chunkY + 1) * chunkSize - 1; y++) {
+                    for (var x = Math.round((chunkX + 1) * chunkSize - chunkSize); x <= (chunkX + 1) * chunkSize - 1; x++) {
+                        let colorCode = correspondingColor[blocks[y][x]];
+                        let charToPrint = correspondingChar[blocks[y][x]];
+
+                        // if (mobs[y][x] != null) {
+                        //     colorCode = "#FF0000";
+                        //     charToPrint = "M";
+                        // }
+
+                        if (blocks[y][x] == null) {
+                            colorCode = "#567d46";
+                            charToPrint = "O";
+                        }
+
+                        if (playerX == x && playerY == y) {
+                            colorCode = "#0000FF";
+                            charToPrint = "P";
+                        }
+
+                        changedText += charToPrint.fontcolor(colorCode) + " ";
+                    }
+                    changedText = changedText + "<br>";
+                }
+                return changedText;
+            }
+
+            function randomInt(min, max) {
+                min = Math.ceil(min);
+                max = Math.floor(max);
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            function randomBool(min, max) {
+                if (randomInt(min, max) == 1) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        </script>
+    </body>
+</html>
