@@ -99,8 +99,8 @@
             <h1 class="sesame-seeds">Basalt</h1>
             <button class="theme" onclick="themeChange()"><p class="fluff" style="margin: 0">Change Theme</p></button>
             <p class="fluff">
-                Basalt is an evolution of a previous game I made in Java that was played within a console. This version converts that same game and gives it the
-                tools of Javascript. This game in short form is like Minecraft but in a birds-eye view text based format.
+                Basalt is an evolution of a previous game I made in Java that was played within a console. This version converts that same game and gives it the tools of Javascript. This game in short
+                form is like Minecraft but in a birds-eye view text based format.
             </p>
         </div>
 
@@ -124,7 +124,7 @@
             updateTheme(localStorage.getItem("dark"));
 
             // Definitions
-            var size = 100;
+            var size = 90;
             var chunkSize = 9;
 
             var playerX = Math.round(centerPlayer(size));
@@ -146,7 +146,7 @@
             var chunkX = Math.round(posToChunk(centerPlayer(size) - 1));
             var chunkY = Math.round(posToChunk(centerPlayer(size) - 1));
 
-            var inventory = [10, 10, 10, 1];
+            var inventory = [10, 10, 10, 1, 0];
 
             // CHange
             // Get Input
@@ -232,10 +232,10 @@
                     }
 
                     if (key == "x") {
+                        chunkX = Math.round(posToChunk(spawnX));
+                        chunkY = Math.round(posToChunk(spawnY));
                         playerX = spawnX;
                         playerY = spawnY;
-                        chunkX = Math.round(posToChunk(spawnX)) - 1;
-                        chunkY = Math.round(posToChunk(spawnY)) - 1;
                         mode = 0;
                         updateRenderer();
                     }
